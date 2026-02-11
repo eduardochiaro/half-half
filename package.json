@@ -1,0 +1,39 @@
+{
+  "name": "half-half",
+  "author": "Eduardo Chiaro",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {
+    "@rebble/clay": "^1.0.6"
+  },
+  "pebble": {
+    "displayName": "Half/Half",
+    "uuid": "0a63c766-91d8-4d5f-a7a7-68d4c7954e9d",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite",
+      "emery",
+      "flint"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "capabilities": [
+      "health"
+    ],
+    "messageKeys": [
+      "PRIMARY_COLOR",
+      "SECONDARY_COLOR"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
