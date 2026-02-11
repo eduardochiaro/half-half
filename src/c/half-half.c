@@ -175,12 +175,28 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, s_canvas_layer);
   
   // Hour layer - large text on red background (top half)
-  s_hour_layer = text_layer_create(GRect(0, 20, bounds.size.w, 70));
+  s_hour_layer = text_layer_create(GRect(0, (bounds.size.h / 2) - 70, bounds.size.w, 70));
   text_layer_set_background_color(s_hour_layer, GColorClear);
   text_layer_set_text_color(s_hour_layer, s_background_color);
   text_layer_set_font(s_hour_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
   text_layer_set_text_alignment(s_hour_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_hour_layer));
+  
+  // Minute layer - large text on black background (bottom half)
+  s_minute_layer = text_layer_create(GRect(0, (bounds.size.h / 2) + 12, bounds.size.w, 70));
+  text_layer_set_background_color(s_minute_layer, GColorClear);
+  text_layer_set_text_color(s_minute_layer, s_accent_color);
+  text_layer_set_font(s_minute_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+  text_layer_set_text_alignment(s_minute_layer, GTextAlignmentCenter);
+  layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
+  
+  // Second layer - smaller text at bottom on black background
+  s_second_layer = text_layer_create(GRect(0, bounds.size.h - 25, bounds.size.w, 30));
+  text_layer_set_background_color(s_second_layer, GColorClear);
+  text_layer_set_text_color(s_second_layer, s_accent_color);
+  text_layer_set_font(s_second_layer, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
+  text_layer_set_text_alignment(s_second_layer, GTextAlignmentCenter);
+  layer_add_child(window_layer, text_layer_get_layer(s_second_layer));
   
   // Month layer - on black circle, left side of center
   s_month_layer = text_layer_create(GRect(center_x - 29, half_height - 10, 30, 26));
@@ -197,49 +213,43 @@ static void main_window_load(Window *window) {
   text_layer_set_font(s_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(s_day_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_day_layer));
-  
-  // Minute layer - large text on black background (bottom half)
-  s_minute_layer = text_layer_create(GRect(0, half_height + 13, bounds.size.w, 70));
-  text_layer_set_background_color(s_minute_layer, GColorClear);
-  text_layer_set_text_color(s_minute_layer, s_accent_color);
-  text_layer_set_font(s_minute_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
-  text_layer_set_text_alignment(s_minute_layer, GTextAlignmentCenter);
-  layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
-  
-  // Second layer - smaller text at bottom on black background
-  s_second_layer = text_layer_create(GRect(0, bounds.size.h - 25, bounds.size.w, 30));
-  text_layer_set_background_color(s_second_layer, GColorClear);
-  text_layer_set_text_color(s_second_layer, s_accent_color);
-  text_layer_set_font(s_second_layer, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
-  text_layer_set_text_alignment(s_second_layer, GTextAlignmentCenter);
-  layer_add_child(window_layer, text_layer_get_layer(s_second_layer));
+
+  int set_w_position = PBL_IF_ROUND_ELSE(10, 0);
+  if (bounds.size.w > 144) {
+    set_w_position = 10;
+  }
 
   // Step name layer - smaller text above seconds on black background
-  s_step_name_layer = text_layer_create(GRect(0, bounds.size.h / 2 - 18, 40, 30));
+  s_step_name_layer = text_layer_create(GRect(set_w_position, bounds.size.h / 2 - 18, 40, 30));
   text_layer_set_background_color(s_step_name_layer, GColorClear);
   text_layer_set_text_color(s_step_name_layer, s_background_color);
   text_layer_set_font(s_step_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(s_step_name_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_step_name_layer));
 
-  // Battery name layer - smaller text above seconds on black background
-  s_battery_name_layer = text_layer_create(GRect(bounds.size.w - 40, bounds.size.h / 2 - 18, 40, 30));
-  text_layer_set_background_color(s_battery_name_layer, GColorClear);
-  text_layer_set_text_color(s_battery_name_layer, s_background_color);
-  text_layer_set_font(s_battery_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
-  text_layer_set_text_alignment(s_battery_name_layer, GTextAlignmentCenter);
-  layer_add_child(window_layer, text_layer_get_layer(s_battery_name_layer));
-
   // Step value layer - below step name on black background
-  s_step_value_layer = text_layer_create(GRect(0, bounds.size.h / 2, 40, 20));
+  s_step_value_layer = text_layer_create(GRect(set_w_position, bounds.size.h / 2, 40, 20));
   text_layer_set_background_color(s_step_value_layer, GColorClear);
   text_layer_set_text_color(s_step_value_layer, s_accent_color);
   text_layer_set_font(s_step_value_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(s_step_value_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_step_value_layer));
 
+  int set_b_position = PBL_IF_ROUND_ELSE(bounds.size.w - 50, bounds.size.w - 40);
+  if (bounds.size.w > 144) {
+    set_b_position = bounds.size.w - 50;
+  }
+
+  // Battery name layer - smaller text above seconds on black background
+  s_battery_name_layer = text_layer_create(GRect(set_b_position, bounds.size.h / 2 - 18, 40, 30));
+  text_layer_set_background_color(s_battery_name_layer, GColorClear);
+  text_layer_set_text_color(s_battery_name_layer, s_background_color);
+  text_layer_set_font(s_battery_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text_alignment(s_battery_name_layer, GTextAlignmentCenter);
+  layer_add_child(window_layer, text_layer_get_layer(s_battery_name_layer));
+
   // Battery value layer - below battery name on black background
-  s_battery_value_layer = text_layer_create(GRect(bounds.size.w - 40, bounds.size.h / 2, 40, 20));
+  s_battery_value_layer = text_layer_create(GRect(set_b_position, bounds.size.h / 2, 40, 20));
   text_layer_set_background_color(s_battery_value_layer, GColorClear);
   text_layer_set_text_color(s_battery_value_layer, s_accent_color);
   text_layer_set_font(s_battery_value_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
