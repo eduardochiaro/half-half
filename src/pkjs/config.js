@@ -11,11 +11,6 @@ module.exports = [
         "defaultValue": "Color Options"
       },
       {
-        "type": "text",
-        "defaultValue": "<img src=\"https://raw.githubusercontent.com/eduardochiaro/half-half/master/assets/basalt_1.png\" style=\"width: 144px; height: 168px; margin: 10px auto; display: block;\" />",
-        "capabilities": ["PLATFORM_BASALT"],
-      },
-      {
         "type": "color",
         "messageKey": "SECONDARY_COLOR",
         "defaultValue": "007DCE",
