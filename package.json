@@ -30,7 +30,9 @@
     ],
     "messageKeys": [
       "PRIMARY_COLOR",
-      "SECONDARY_COLOR"
+      "SECONDARY_COLOR",
+      "SHOW_SECONDS",
+      "BATTERY_SAVE_SECONDS"
     ],
     "resources": {
       "media": []
