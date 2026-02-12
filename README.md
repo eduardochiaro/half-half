@@ -26,6 +26,8 @@ A digital watchface for Pebble smartwatches with a minimalist split-screen desig
 ![Emery 1](assets/emery_1.png)
 ![Emery 2](assets/emery_2.png)
 
+## Store
+[Rebble App Store](https://apps.rebble.io/en_US/application/698e41f7ea64380009df8ecc)
 
 ## Support
 For issues, questions, or suggestions, please open an issue on GitHub.
