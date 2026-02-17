@@ -1,9 +1,12 @@
 {
   "name": "half-half",
   "author": "Eduardo Chiaro",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "keywords": [
-    "pebble-app"
+    "pebble-app",
+    "half",
+    "half-half",
+    "watchface"
   ],
   "private": true,
   "dependencies": {
@@ -35,7 +38,14 @@
       "BATTERY_SAVE_SECONDS"
     ],
     "resources": {
-      "media": []
+      "media": [
+        {
+          "type": "bitmap",
+          "name": "MENU_ICON",
+          "file": "menu_icon.png",
+          "menuIcon": true
+        }
+      ]
     }
   }
 }

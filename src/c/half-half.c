@@ -28,6 +28,23 @@ static GColor s_accent_color;
 static bool s_battery_save_enabled;
 static bool s_show_seconds;
 
+// Unobstructed area tracking
+static GRect s_full_bounds;
+static GRect s_current_bounds;
+
+// Original layer frames for animation
+static GRect s_hour_frame_full;
+static GRect s_month_frame_full;
+static GRect s_day_frame_full;
+static GRect s_minute_frame_full;
+static GRect s_second_frame_full;
+#if defined(PBL_HEALTH)
+static GRect s_step_name_frame_full;
+static GRect s_step_value_frame_full;
+#endif
+static GRect s_battery_name_frame_full;
+static GRect s_battery_value_frame_full;
+
 static char s_hour_buffer[4];
 static char s_month_buffer[8];
 static char s_day_buffer[4];
@@ -48,6 +65,85 @@ static bool is_large_screen = false;
 #endif
 
 #define SECONDS_DISPLAY_DURATION 10000  // Show seconds for 10 seconds after interaction
+
+// Helper to interpolate a GRect based on animation progress
+static GRect prv_get_animated_frame(GRect full_frame, int full_height, int current_height, AnimationProgress progress) {
+  if (full_height == current_height) {
+    return full_frame;
+  }
+  
+  // Calculate the scale factor
+  int16_t scale_numerator = current_height;
+  int16_t scale_denominator = full_height;
+  
+  // Calculate target Y position (scaled proportionally)
+  int16_t target_y = (full_frame.origin.y * scale_numerator) / scale_denominator;
+  
+  // Interpolate between current and target based on progress
+  int16_t delta_y = target_y - full_frame.origin.y;
+  int16_t new_y = full_frame.origin.y + (delta_y * progress) / ANIMATION_NORMALIZED_MAX;
+  
+  return GRect(full_frame.origin.x, new_y, full_frame.size.w, full_frame.size.h);
+}
+
+// Update all layer positions based on current unobstructed bounds
+static void prv_update_layer_positions(AnimationProgress progress) {
+  GRect unobstructed = layer_get_unobstructed_bounds(window_get_root_layer(s_main_window));
+  int full_h = s_full_bounds.size.h;
+  int current_h = unobstructed.size.h;
+  bool is_obstructed = (current_h < full_h);
+  
+  // Update canvas layer bounds
+  layer_set_bounds(s_canvas_layer, GRect(0, 0, s_full_bounds.size.w, current_h));
+  
+  // Hide seconds when obstructed
+  if (s_show_seconds) {
+    layer_set_hidden(text_layer_get_layer(s_second_layer), is_obstructed);
+  }
+  
+  // Calculate offset for hour to move it up a bit when obstructed
+  GRect hour_frame = prv_get_animated_frame(s_hour_frame_full, full_h, current_h, progress);
+  if (is_obstructed) {
+    int offset = 14 * progress / ANIMATION_NORMALIZED_MAX;
+    hour_frame.origin.y -= offset;
+  }
+  layer_set_frame(text_layer_get_layer(s_hour_layer), hour_frame);
+  
+  // Animate date layers
+  layer_set_frame(text_layer_get_layer(s_month_layer), 
+    prv_get_animated_frame(s_month_frame_full, full_h, current_h, progress));
+  layer_set_frame(text_layer_get_layer(s_day_layer), 
+    prv_get_animated_frame(s_day_frame_full, full_h, current_h, progress));
+  layer_set_frame(text_layer_get_layer(s_minute_layer), 
+    prv_get_animated_frame(s_minute_frame_full, full_h, current_h, progress));
+  layer_set_frame(text_layer_get_layer(s_second_layer), 
+    prv_get_animated_frame(s_second_frame_full, full_h, current_h, progress));
+  
+#if defined(PBL_HEALTH)
+  // Move step name (label) up a bit when obstructed
+  GRect step_name_frame = prv_get_animated_frame(s_step_name_frame_full, full_h, current_h, progress);
+  if (is_obstructed) {
+    int offset = (is_large_screen ? 10 : 4) * progress / ANIMATION_NORMALIZED_MAX;
+    step_name_frame.origin.y -= offset;
+  }
+  layer_set_frame(text_layer_get_layer(s_step_name_layer), step_name_frame);
+  layer_set_frame(text_layer_get_layer(s_step_value_layer), 
+    prv_get_animated_frame(s_step_value_frame_full, full_h, current_h, progress));
+#endif
+
+  // Move battery name (label) up a bit when obstructed
+  GRect batt_name_frame = prv_get_animated_frame(s_battery_name_frame_full, full_h, current_h, progress);
+  if (is_obstructed) {
+    int offset = (is_large_screen ? 10 : 4) * progress / ANIMATION_NORMALIZED_MAX;
+    batt_name_frame.origin.y -= offset;
+  }
+  layer_set_frame(text_layer_get_layer(s_battery_name_layer), batt_name_frame);
+  layer_set_frame(text_layer_get_layer(s_battery_value_layer), 
+    prv_get_animated_frame(s_battery_value_frame_full, full_h, current_h, progress));
+  
+  // Mark canvas for redraw
+  layer_mark_dirty(s_canvas_layer);
+}
 
 
 // Load settings
@@ -151,7 +247,11 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
-  int half_height = bounds.size.h / 2;
+  GRect unobstructed = layer_get_unobstructed_bounds(window_get_root_layer(s_main_window));
+  
+  // Use unobstructed height for calculations
+  int effective_height = unobstructed.size.h;
+  int half_height = effective_height / 2;
   int center_x = bounds.size.w / 2;
   
   // Scale circle radius based on screen size
@@ -164,7 +264,7 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   
   // Bottom half - Black background
   graphics_context_set_fill_color(ctx, s_background_color);
-  graphics_fill_rect(ctx, GRect(0, half_height, bounds.size.w, half_height), 0, GCornerNone);
+  graphics_fill_rect(ctx, GRect(0, half_height, bounds.size.w, effective_height - half_height), 0, GCornerNone);
   
   // Black circle behind month (on red background)
   graphics_context_set_fill_color(ctx, s_background_color);
@@ -321,21 +421,24 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 }
 
 static void unobstructed_area_change_handler(AnimationProgress progress, void *context) {
-  // This fires when the watchface becomes visible or covered
-  // We'll check visibility in the did_change handler
+  // Animate layer positions during the transition
+  prv_update_layer_positions(progress);
 }
 
 static void unobstructed_area_did_change(void *context) {
-  // Only use battery saving logic if enabled and seconds are shown
+  // Final update with full progress
+  prv_update_layer_positions(ANIMATION_NORMALIZED_MAX);
+  
+  // Update current bounds
+  s_current_bounds = layer_get_unobstructed_bounds(window_get_root_layer(s_main_window));
+  
+  // Battery saving logic for seconds display
   if (!s_battery_save_enabled || !s_show_seconds) {
     return;
   }
   
-  GRect unobstructed = layer_get_unobstructed_bounds(window_get_root_layer(s_main_window));
-  GRect full_bounds = layer_get_bounds(window_get_root_layer(s_main_window));
-  
-  // Check if watchface is visible
-  bool is_visible = grect_equal(&unobstructed, &full_bounds);
+  // Check if watchface is fully visible
+  bool is_visible = grect_equal(&s_current_bounds, &s_full_bounds);
   
   if (is_visible && !s_is_focused) {
     // Watchface became visible - enable seconds temporarily
@@ -380,6 +483,10 @@ static void main_window_load(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
   int half_height = bounds.size.h / 2;
   int center_x = bounds.size.w / 2;
+  
+  // Store full bounds for unobstructed area calculations
+  s_full_bounds = bounds;
+  s_current_bounds = layer_get_unobstructed_bounds(window_layer);
   
   // Create canvas layer for background
   s_canvas_layer = layer_create(bounds);
@@ -486,6 +593,24 @@ static void main_window_load(Window *window) {
   text_layer_set_font(s_battery_value_layer, fonts_get_system_font(is_large_screen ? FONT_KEY_GOTHIC_18_BOLD : FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(s_battery_value_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_battery_value_layer));
+  
+  // Store original frames for unobstructed area animation
+  s_hour_frame_full = layer_get_frame(text_layer_get_layer(s_hour_layer));
+  s_month_frame_full = layer_get_frame(text_layer_get_layer(s_month_layer));
+  s_day_frame_full = layer_get_frame(text_layer_get_layer(s_day_layer));
+  s_minute_frame_full = layer_get_frame(text_layer_get_layer(s_minute_layer));
+  s_second_frame_full = layer_get_frame(text_layer_get_layer(s_second_layer));
+#if defined(PBL_HEALTH)
+  s_step_name_frame_full = layer_get_frame(text_layer_get_layer(s_step_name_layer));
+  s_step_value_frame_full = layer_get_frame(text_layer_get_layer(s_step_value_layer));
+#endif
+  s_battery_name_frame_full = layer_get_frame(text_layer_get_layer(s_battery_name_layer));
+  s_battery_value_frame_full = layer_get_frame(text_layer_get_layer(s_battery_value_layer));
+  
+  // Apply initial unobstructed area if different from full bounds
+  if (!grect_equal(&s_current_bounds, &s_full_bounds)) {
+    prv_update_layer_positions(ANIMATION_NORMALIZED_MAX);
+  }
 }
 
 static void main_window_unload(Window *window) {
