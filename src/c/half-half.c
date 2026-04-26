@@ -26,9 +26,11 @@ static TextLayer *s_battery_value_layer;
 //settings
 static GColor s_background_color;
 static GColor s_accent_color;
+static GColor s_text_override_color;
 static bool s_battery_save_enabled;
 static bool s_show_seconds;
 static bool s_show_leading_zero;
+static bool s_text_color_override;
 
 // Unobstructed area tracking
 static GRect s_full_bounds;
@@ -150,6 +152,8 @@ static void load_settings() {
   s_show_seconds = persist_exists(MESSAGE_KEY_SHOW_SECONDS) ? persist_read_bool(MESSAGE_KEY_SHOW_SECONDS) : true;
   s_battery_save_enabled = persist_exists(MESSAGE_KEY_BATTERY_SAVE_SECONDS) ? persist_read_bool(MESSAGE_KEY_BATTERY_SAVE_SECONDS) : false;
   s_show_leading_zero = persist_exists(MESSAGE_KEY_SHOW_LEADING_ZERO) ? persist_read_bool(MESSAGE_KEY_SHOW_LEADING_ZERO) : false;
+  s_text_color_override = persist_exists(MESSAGE_KEY_TEXT_COLOR_OVERRIDE) ? persist_read_bool(MESSAGE_KEY_TEXT_COLOR_OVERRIDE) : false;
+  s_text_override_color = persist_exists(MESSAGE_KEY_TEXT_OVERRIDE_COLOR) ? (GColor){ .argb = (uint8_t)persist_read_int(MESSAGE_KEY_TEXT_OVERRIDE_COLOR) } : GColorWhite;
 }
 
 // Save settings
@@ -159,6 +163,8 @@ static void save_settings() {
   persist_write_bool(MESSAGE_KEY_SHOW_SECONDS, s_show_seconds);
   persist_write_bool(MESSAGE_KEY_BATTERY_SAVE_SECONDS, s_battery_save_enabled);
   persist_write_bool(MESSAGE_KEY_SHOW_LEADING_ZERO, s_show_leading_zero);
+  persist_write_bool(MESSAGE_KEY_TEXT_COLOR_OVERRIDE, s_text_color_override);
+  persist_write_int(MESSAGE_KEY_TEXT_OVERRIDE_COLOR, s_text_override_color.argb);
 }
 
 // Inbox received callback
@@ -243,6 +249,16 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     s_show_leading_zero = leading_zero_tuple->value->int32 == 1;
   }
 
+  Tuple *text_color_override_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR_OVERRIDE);
+  if (text_color_override_tuple) {
+    s_text_color_override = text_color_override_tuple->value->int32 == 1;
+  }
+
+  Tuple *text_override_color_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_OVERRIDE_COLOR);
+  if (text_override_color_tuple) {
+    s_text_override_color = GColorFromHEX(text_override_color_tuple->value->int32);
+  }
+
   save_settings();
   update_colors();
   layer_mark_dirty(s_canvas_layer);
@@ -280,6 +296,23 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
 }
 
 static void update_colors() {
+  if (s_text_color_override) {
+    text_layer_set_text_color(s_hour_layer, s_text_override_color);
+    text_layer_set_text_color(s_month_layer, s_text_override_color);
+    text_layer_set_text_color(s_day_layer, s_text_override_color);
+    text_layer_set_text_color(s_minute_layer, s_text_override_color);
+    text_layer_set_text_color(s_second_layer, s_text_override_color);
+#if defined(PBL_HEALTH)
+    text_layer_set_text_color(s_step_name_layer, s_text_override_color);
+#endif
+    text_layer_set_text_color(s_battery_name_layer, s_text_override_color);
+#if defined(PBL_HEALTH)
+    text_layer_set_text_color(s_step_value_layer, s_text_override_color);
+#endif
+    text_layer_set_text_color(s_battery_value_layer, s_text_override_color);
+    return;
+  }
+
   text_layer_set_text_color(s_hour_layer, s_background_color);
   text_layer_set_text_color(s_month_layer, s_accent_color);
   text_layer_set_text_color(s_day_layer, s_background_color);
@@ -526,11 +559,14 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
   
   // Second layer - smaller text at bottom on black background
-  int seconds_height = is_large_screen ? 35 : 30;
+  int seconds_height = is_large_screen ? 40 : 30;
+  #if defined(PBL_PLATFORM_GABBRO)
+  seconds_height = 50;
+  #endif
   s_second_layer = text_layer_create(GRect(0, bounds.size.h - seconds_height, bounds.size.w, seconds_height));
   text_layer_set_background_color(s_second_layer, GColorClear);
   text_layer_set_text_color(s_second_layer, s_accent_color);
-  text_layer_set_font(s_second_layer, fonts_get_system_font(is_large_screen ? FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM : FONT_KEY_LECO_20_BOLD_NUMBERS));
+  text_layer_set_font(s_second_layer, fonts_get_system_font(is_large_screen ? FONT_KEY_LECO_32_BOLD_NUMBERS : FONT_KEY_LECO_20_BOLD_NUMBERS));
   text_layer_set_text_alignment(s_second_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_second_layer));
   
@@ -556,7 +592,7 @@ static void main_window_load(Window *window) {
   text_layer_set_text_alignment(s_day_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_day_layer));
 
-  int top_offset = is_large_screen ? 10 : 4;
+  int top_offset = is_large_screen ? 8 : 4;
   
 #if defined(PBL_HEALTH)
   int set_w_position = PBL_IF_ROUND_ELSE(10, 0);
@@ -576,7 +612,7 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_step_name_layer));
 
   // Step value layer - below step name on black background
-  s_step_value_layer = text_layer_create(GRect(set_w_position, bounds.size.h / 2 + 2, info_width, 24));
+  s_step_value_layer = text_layer_create(GRect(set_w_position, bounds.size.h / 2 + top_offset, info_width, 24));
   text_layer_set_background_color(s_step_value_layer, GColorClear);
   text_layer_set_text_color(s_step_value_layer, s_accent_color);
   text_layer_set_font(s_step_value_layer, fonts_get_system_font(is_large_screen ? FONT_KEY_GOTHIC_18_BOLD : FONT_KEY_GOTHIC_14_BOLD));
@@ -620,6 +656,9 @@ static void main_window_load(Window *window) {
 #endif
   s_battery_name_frame_full = layer_get_frame(text_layer_get_layer(s_battery_name_layer));
   s_battery_value_frame_full = layer_get_frame(text_layer_get_layer(s_battery_value_layer));
+
+  // Apply configured text colors once all text layers exist.
+  update_colors();
   
   // Apply initial unobstructed area if different from full bounds
   if (!grect_equal(&s_current_bounds, &s_full_bounds)) {
@@ -649,7 +688,10 @@ static void init() {
   s_main_window = window_create();
 
 
-  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+  #if defined(PBL_PLATFORM_EMERY)
+  is_large_screen = true;
+  #endif
+  #if defined(PBL_PLATFORM_GABBRO)
   is_large_screen = true;
   #endif
   

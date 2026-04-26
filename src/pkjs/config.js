@@ -25,6 +25,20 @@ module.exports = [
         "label": "Lower Color",
         "sunlight": true,
         "allowGray": true
+      },
+      {
+        "type": "toggle",
+        "messageKey": "TEXT_COLOR_OVERRIDE",
+        "label": "Override Text Color",
+        "defaultValue": false,
+      },
+      {
+        "type": "color",
+        "messageKey": "TEXT_OVERRIDE_COLOR",
+        "defaultValue": "FFFFFF",
+        "label": "Text Override Color",
+        "sunlight": true,
+        "allowGray": true
       }
     ]
   },

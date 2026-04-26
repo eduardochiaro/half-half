@@ -1,7 +1,7 @@
 {
   "name": "half-half",
   "author": "Eduardo Chiaro",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "keywords": [
     "pebble-app",
     "half",
@@ -46,7 +46,9 @@
       "SECONDARY_COLOR",
       "SHOW_SECONDS",
       "BATTERY_SAVE_SECONDS",
-      "SHOW_LEADING_ZERO"
+      "SHOW_LEADING_ZERO",
+      "TEXT_COLOR_OVERRIDE",
+      "TEXT_OVERRIDE_COLOR"
     ],
     "resources": {
       "media": [
