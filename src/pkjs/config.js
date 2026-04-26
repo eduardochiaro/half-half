@@ -37,6 +37,12 @@ module.exports = [
       },
       {
         "type": "toggle",
+        "messageKey": "SHOW_LEADING_ZERO",
+        "label": "Show Leading Zero on hours",
+        "defaultValue": false,
+      },
+      {
+        "type": "toggle",
         "messageKey": "SHOW_SECONDS",
         "label": "Show Seconds",
         "defaultValue": true,

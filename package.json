@@ -8,6 +8,15 @@
     "half-half",
     "watchface"
   ],
+  "scripts": {
+    "build": "pebble build",
+    "clean": "pebble clean",
+    "emulator": "npm run clean && npm run build && pebble install --emulator ",
+    "phone": "npm run clean && npm run build && pebble install --phone",
+    "config": "pebble emu-app-config --emulator",
+    "logs": "pebble logs",
+    "images": "python3 resize_assets.py"
+  },
   "private": true,
   "dependencies": {
     "@rebble/clay": "^1.0.6"
@@ -23,7 +32,8 @@
       "chalk",
       "diorite",
       "emery",
-      "flint"
+      "flint",
+      "gabbro"
     ],
     "watchapp": {
       "watchface": true
@@ -35,7 +45,8 @@
       "PRIMARY_COLOR",
       "SECONDARY_COLOR",
       "SHOW_SECONDS",
-      "BATTERY_SAVE_SECONDS"
+      "BATTERY_SAVE_SECONDS",
+      "SHOW_LEADING_ZERO"
     ],
     "resources": {
       "media": [

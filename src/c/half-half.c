@@ -23,10 +23,12 @@ static TextLayer *s_step_value_layer;
 #endif
 static TextLayer *s_battery_value_layer;
 
+//settings
 static GColor s_background_color;
 static GColor s_accent_color;
 static bool s_battery_save_enabled;
 static bool s_show_seconds;
+static bool s_show_leading_zero;
 
 // Unobstructed area tracking
 static GRect s_full_bounds;
@@ -57,12 +59,7 @@ static char s_battery_buffer[8];
 
 static bool s_is_focused = true;
 static AppTimer *s_seconds_timer = NULL;
-
-#if defined(PBL_PLATFORM_EMERY)
-static bool is_large_screen = true;
-#else
 static bool is_large_screen = false;
-#endif
 
 #define SECONDS_DISPLAY_DURATION 10000  // Show seconds for 10 seconds after interaction
 
@@ -152,6 +149,7 @@ static void load_settings() {
   s_accent_color = persist_exists(MESSAGE_KEY_SECONDARY_COLOR) ? (GColor){ .argb = (uint8_t)persist_read_int(MESSAGE_KEY_SECONDARY_COLOR) } : GColorBlueMoon;
   s_show_seconds = persist_exists(MESSAGE_KEY_SHOW_SECONDS) ? persist_read_bool(MESSAGE_KEY_SHOW_SECONDS) : true;
   s_battery_save_enabled = persist_exists(MESSAGE_KEY_BATTERY_SAVE_SECONDS) ? persist_read_bool(MESSAGE_KEY_BATTERY_SAVE_SECONDS) : false;
+  s_show_leading_zero = persist_exists(MESSAGE_KEY_SHOW_LEADING_ZERO) ? persist_read_bool(MESSAGE_KEY_SHOW_LEADING_ZERO) : false;
 }
 
 // Save settings
@@ -160,6 +158,7 @@ static void save_settings() {
   persist_write_int(MESSAGE_KEY_SECONDARY_COLOR, s_accent_color.argb);
   persist_write_bool(MESSAGE_KEY_SHOW_SECONDS, s_show_seconds);
   persist_write_bool(MESSAGE_KEY_BATTERY_SAVE_SECONDS, s_battery_save_enabled);
+  persist_write_bool(MESSAGE_KEY_SHOW_LEADING_ZERO, s_show_leading_zero);
 }
 
 // Inbox received callback
@@ -239,6 +238,11 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     }
   }
 
+  Tuple *leading_zero_tuple = dict_find(iterator, MESSAGE_KEY_SHOW_LEADING_ZERO);
+  if (leading_zero_tuple) {
+    s_show_leading_zero = leading_zero_tuple->value->int32 == 1;
+  }
+
   save_settings();
   update_colors();
   layer_mark_dirty(s_canvas_layer);
@@ -298,7 +302,7 @@ static void update_time() {
   // Hour (12-hour format)
   strftime(s_hour_buffer, sizeof(s_hour_buffer), clock_is_24h_style() ? "%H" : "%I", tick_time);
   // Remove leading zero from hour if present
-  if (s_hour_buffer[0] == '0') {
+  if (s_hour_buffer[0] == '0' && !s_show_leading_zero) {
     memmove(s_hour_buffer, s_hour_buffer + 1, sizeof(s_hour_buffer) - 1);
   }
   text_layer_set_text(s_hour_layer, s_hour_buffer);
@@ -494,14 +498,18 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, s_canvas_layer);
   
   // Scale positioning and fonts based on screen size
-  int hour_offset = is_large_screen ? 85 : 70;
-  int minute_offset = is_large_screen ? 25: 12;
+  int hour_offset = is_large_screen ? 105 : 70;
+  int minute_offset = is_large_screen ? 15: 12;
   
   // Hour layer - large text on red background (top half)
   s_hour_layer = text_layer_create(GRect(0, (bounds.size.h / 2) - hour_offset, bounds.size.w, hour_offset));
   text_layer_set_background_color(s_hour_layer, GColorClear);
   text_layer_set_text_color(s_hour_layer, s_background_color);
+  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+  text_layer_set_font(s_hour_layer, fonts_get_system_font(FONT_KEY_LECO_60_NUMBERS_AM_PM));
+  #else
   text_layer_set_font(s_hour_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+  #endif
   text_layer_set_text_alignment(s_hour_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_hour_layer));
   
@@ -509,7 +517,11 @@ static void main_window_load(Window *window) {
   s_minute_layer = text_layer_create(GRect(0, (bounds.size.h / 2) + minute_offset, bounds.size.w, 70));
   text_layer_set_background_color(s_minute_layer, GColorClear);
   text_layer_set_text_color(s_minute_layer, s_accent_color);
+  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+  text_layer_set_font(s_minute_layer, fonts_get_system_font(FONT_KEY_LECO_60_NUMBERS_AM_PM));
+  #else
   text_layer_set_font(s_minute_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+  #endif
   text_layer_set_text_alignment(s_minute_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
   
@@ -544,6 +556,8 @@ static void main_window_load(Window *window) {
   text_layer_set_text_alignment(s_day_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_day_layer));
 
+  int top_offset = is_large_screen ? 10 : 4;
+  
 #if defined(PBL_HEALTH)
   int set_w_position = PBL_IF_ROUND_ELSE(10, 0);
   int info_width = 40;
@@ -554,7 +568,7 @@ static void main_window_load(Window *window) {
   }
 
   // Step name layer - smaller text above seconds on black background
-  s_step_name_layer = text_layer_create(GRect(set_w_position, bounds.size.h / 2 - 22, info_width, 30));
+  s_step_name_layer = text_layer_create(GRect(set_w_position, bounds.size.h / 2 - top_offset - 18, info_width, 30));
   text_layer_set_background_color(s_step_name_layer, GColorClear);
   text_layer_set_text_color(s_step_name_layer, s_background_color);
   text_layer_set_font(s_step_name_layer, fonts_get_system_font(is_large_screen ? FONT_KEY_GOTHIC_18_BOLD : FONT_KEY_GOTHIC_14_BOLD));
@@ -579,7 +593,7 @@ static void main_window_load(Window *window) {
   }
 
   // Battery name layer - smaller text above seconds on black background
-  s_battery_name_layer = text_layer_create(GRect(set_b_position, bounds.size.h / 2 - 22, batt_width, 30));
+  s_battery_name_layer = text_layer_create(GRect(set_b_position, bounds.size.h / 2 - top_offset - 18, batt_width, 30));
   text_layer_set_background_color(s_battery_name_layer, GColorClear);
   text_layer_set_text_color(s_battery_name_layer, s_background_color);
   text_layer_set_font(s_battery_name_layer, fonts_get_system_font(is_large_screen ? FONT_KEY_GOTHIC_18_BOLD : FONT_KEY_GOTHIC_14_BOLD));
@@ -633,6 +647,11 @@ static void main_window_unload(Window *window) {
 static void init() {
   load_settings();
   s_main_window = window_create();
+
+
+  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+  is_large_screen = true;
+  #endif
   
   window_set_window_handlers(s_main_window, (WindowHandlers) {
     .load = main_window_load,
