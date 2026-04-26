@@ -28,7 +28,7 @@ module.exports = [
       },
       {
         "type": "toggle",
-        "messageKey": "TEXT_COLOR_OVERRIDE",
+        "messageKey": "USE_TEXT_COLOR_OVERRIDE",
         "label": "Override Text Color",
         "defaultValue": false,
       },
@@ -39,7 +39,13 @@ module.exports = [
         "label": "Text Override Color",
         "sunlight": true,
         "allowGray": true
-      }
+      },
+      {
+        "type": "text",
+        "id": "PREVIEW",
+        "label": "Prewview",
+        "defaultValue": ""
+      },
     ]
   },
   {

@@ -47,7 +47,7 @@
       "SHOW_SECONDS",
       "BATTERY_SAVE_SECONDS",
       "SHOW_LEADING_ZERO",
-      "TEXT_COLOR_OVERRIDE",
+      "USE_TEXT_COLOR_OVERRIDE",
       "TEXT_OVERRIDE_COLOR"
     ],
     "resources": {

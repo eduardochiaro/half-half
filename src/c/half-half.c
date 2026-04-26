@@ -30,7 +30,7 @@ static GColor s_text_override_color;
 static bool s_battery_save_enabled;
 static bool s_show_seconds;
 static bool s_show_leading_zero;
-static bool s_text_color_override;
+static bool s_use_text_color_override;
 
 // Unobstructed area tracking
 static GRect s_full_bounds;
@@ -152,7 +152,7 @@ static void load_settings() {
   s_show_seconds = persist_exists(MESSAGE_KEY_SHOW_SECONDS) ? persist_read_bool(MESSAGE_KEY_SHOW_SECONDS) : true;
   s_battery_save_enabled = persist_exists(MESSAGE_KEY_BATTERY_SAVE_SECONDS) ? persist_read_bool(MESSAGE_KEY_BATTERY_SAVE_SECONDS) : false;
   s_show_leading_zero = persist_exists(MESSAGE_KEY_SHOW_LEADING_ZERO) ? persist_read_bool(MESSAGE_KEY_SHOW_LEADING_ZERO) : false;
-  s_text_color_override = persist_exists(MESSAGE_KEY_TEXT_COLOR_OVERRIDE) ? persist_read_bool(MESSAGE_KEY_TEXT_COLOR_OVERRIDE) : false;
+  s_use_text_color_override = persist_exists(MESSAGE_KEY_USE_TEXT_COLOR_OVERRIDE) ? persist_read_bool(MESSAGE_KEY_USE_TEXT_COLOR_OVERRIDE) : false;
   s_text_override_color = persist_exists(MESSAGE_KEY_TEXT_OVERRIDE_COLOR) ? (GColor){ .argb = (uint8_t)persist_read_int(MESSAGE_KEY_TEXT_OVERRIDE_COLOR) } : GColorWhite;
 }
 
@@ -163,7 +163,7 @@ static void save_settings() {
   persist_write_bool(MESSAGE_KEY_SHOW_SECONDS, s_show_seconds);
   persist_write_bool(MESSAGE_KEY_BATTERY_SAVE_SECONDS, s_battery_save_enabled);
   persist_write_bool(MESSAGE_KEY_SHOW_LEADING_ZERO, s_show_leading_zero);
-  persist_write_bool(MESSAGE_KEY_TEXT_COLOR_OVERRIDE, s_text_color_override);
+  persist_write_bool(MESSAGE_KEY_USE_TEXT_COLOR_OVERRIDE, s_use_text_color_override);
   persist_write_int(MESSAGE_KEY_TEXT_OVERRIDE_COLOR, s_text_override_color.argb);
 }
 
@@ -249,9 +249,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     s_show_leading_zero = leading_zero_tuple->value->int32 == 1;
   }
 
-  Tuple *text_color_override_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR_OVERRIDE);
+  Tuple *text_color_override_tuple = dict_find(iterator, MESSAGE_KEY_USE_TEXT_COLOR_OVERRIDE);
   if (text_color_override_tuple) {
-    s_text_color_override = text_color_override_tuple->value->int32 == 1;
+    s_use_text_color_override = text_color_override_tuple->value->int32 == 1;
   }
 
   Tuple *text_override_color_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_OVERRIDE_COLOR);
@@ -296,7 +296,7 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
 }
 
 static void update_colors() {
-  if (s_text_color_override) {
+  if (s_use_text_color_override) {
     text_layer_set_text_color(s_hour_layer, s_text_override_color);
     text_layer_set_text_color(s_month_layer, s_text_override_color);
     text_layer_set_text_color(s_day_layer, s_text_override_color);
