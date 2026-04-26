@@ -40,10 +40,29 @@ module.exports = [
         "sunlight": true,
         "allowGray": true
       },
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Preview"
+      },
       {
         "type": "text",
         "id": "PREVIEW",
-        "label": "Prewview",
+        "label": "Preview",
+        "defaultValue": ""
+      },
+      {
+        "type": "heading",
+        "defaultValue": "Presets"
+      },
+      {
+        "type": "text",
+        "id": "COLOR_PRESETS",
+        "label": "Presets",
         "defaultValue": ""
       },
     ]

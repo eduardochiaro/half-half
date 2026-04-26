@@ -1,7 +1,7 @@
 {
   "name": "half-half",
   "author": "Eduardo Chiaro",
-  "version": "1.3.0",
+  "version": "1.6.0",
   "keywords": [
     "pebble-app",
     "half",
@@ -19,7 +19,7 @@
   },
   "private": true,
   "dependencies": {
-    "@rebble/clay": "^1.0.6"
+    "@rebble/clay": "^1.0.8"
   },
   "pebble": {
     "displayName": "Half/Half",
@@ -39,7 +39,8 @@
       "watchface": true
     },
     "capabilities": [
-      "health"
+      "health",
+      "configurable"
     ],
     "messageKeys": [
       "PRIMARY_COLOR",

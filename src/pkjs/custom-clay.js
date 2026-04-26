@@ -34,6 +34,54 @@ module.exports = function(minified) {
   }
 
 
+  var PRESETS = [
+    { name: 'Ocean',   upper: '007DCE', lower: 'FFFFFF', text: null },
+    { name: 'Night',   upper: '000055', lower: 'FFAA00', text: null },
+    { name: 'Fire',    upper: 'FF5500', lower: '000000', text: null },
+    { name: 'Forest',  upper: '005500', lower: '00AA00', text: 'FFFFFF' },
+    { name: 'Dusk',    upper: 'AA5500', lower: '000055', text: 'FFFFFF' },
+    { name: 'Sunset',   upper: 'FFAA00', lower: '550000', text: null },
+    { name: 'Lavender',upper: 'AA00AA', lower: 'FFFFFF', text: null },
+    { name: 'Cotton Candy', upper: 'FF55AA', lower: 'FFAAFF', text: 'FFFFFF' },
+    { name: 'Rose',    upper: 'FF0055', lower: 'FFFFFF', text: null },
+    { name: 'Slate',   upper: '555555', lower: 'FFFFFF', text: null },
+  ];
+
+  function buildPresets() {
+    var presetsItem = clayConfig.getItemById('COLOR_PRESETS');
+    var primaryColorItem = clayConfig.getItemByMessageKey('PRIMARY_COLOR');
+    var secondaryColorItem = clayConfig.getItemByMessageKey('SECONDARY_COLOR');
+    var textOverrideColorItem = clayConfig.getItemByMessageKey('TEXT_OVERRIDE_COLOR');
+
+    var html = '<div id="hh-presets" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0;-webkit-overflow-scrolling:touch;">';
+    PRESETS.forEach(function(p) {
+      html += '<button type=\"button\" data-upper=\"' + p.upper + '\"' +
+        ' data-lower=\"' + p.lower + '\"' +
+        (p.text ? ' data-text=\"' + p.text + '\"' : '') +
+        ' style="border:2px solid #ccc;border-radius:6px;padding:0;width:40px;cursor:pointer;overflow:hidden;background:none;">' +
+        '<div style="height:20px;background:#' + p.upper + ';"></div>' +
+        '<div style="height:20px;background:#' + p.lower + ';"></div>' +
+        '<div style="font-size:14px;font-weight:bold;padding:2px 0;text-align:center;background:#' + p.upper + ';color:#' +  (p.text || p.lower) + ';">' + p.name + '</div>' +
+        '</button>';
+    });
+    html += '</div>';
+
+    presetsItem.set(html);
+
+    document.querySelectorAll('#hh-presets button').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        secondaryColorItem.set(parseInt(btn.getAttribute('data-upper'), 16));
+        primaryColorItem.set(parseInt(btn.getAttribute('data-lower'), 16));
+        if (btn.hasAttribute('data-text')) {
+          clayConfig.getItemByMessageKey('USE_TEXT_COLOR_OVERRIDE').set(true);
+          textOverrideColorItem.set(parseInt(btn.getAttribute('data-text'), 16));
+        } else {         
+          clayConfig.getItemByMessageKey('USE_TEXT_COLOR_OVERRIDE').set(false);
+        }
+      });
+    });
+  }
+
   function togglePreview() {
     var preview = clayConfig.getItemById('PREVIEW');
     var primaryColor = decimalToRGB(clayConfig.getItemByMessageKey('PRIMARY_COLOR').get());
@@ -49,7 +97,7 @@ module.exports = function(minified) {
         '<div style="position:absolute;left:0;right:0;top:0;height:114px;background:' + secondaryColor + ';"></div>' +
         '<div style="position:absolute;left:0;right:0;top:114px;height:114px;background:' + primaryColor + ';"></div>' +
 
-        '<div style="position:absolute;top:12px;left:0;right:0;text-align:center;font-size:60px;font-weight:700;line-height:1;color:' + topTextColor + ';">8</div>' +
+        '<div style="position:absolute;top:18px;left:0;right:0;text-align:center;font-size:60px;font-weight:700;line-height:1;color:' + topTextColor + ';">8</div>' +
 
         '<div style="position:absolute;left:0;right:0;top:90px;height:28px;font-size:18px;font-weight:700;line-height:1;">' +
           '<span style="position:absolute;left:10px;top:0;color:' + topTextColor + ';">Steps</span>' +
@@ -71,6 +119,8 @@ module.exports = function(minified) {
   }
 
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function() {
+    buildPresets();
+
     var showSecondsToggle = clayConfig.getItemByMessageKey('SHOW_SECONDS');
     toggleBackground.call(showSecondsToggle);
     showSecondsToggle.on('change', toggleBackground);
